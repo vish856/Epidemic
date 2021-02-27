@@ -1,0 +1,237 @@
+2 import random
+3
+4 class Simulation():
+5 """A class to control the simulation and help facilitate in the spread of
+the disease."""
+6
+7 def __init__(self):
+8 """Initialize attributes"""
+9 self.day_number = 1
+10
+11 #Get simulation initial conditions from the user
+12 print("To simulate an epidemic outbreak, we must know the population
+size.")
+13 self.population_size = int(input("---Enter the population size: "))
+14
+15 print("\nWe must first start by infecting a portion of the population.")
+16 self.infection_percent = float(input("---Enter the percentage (0-100) of
+the population to initially infect: "))
+17 self.infection_percent /= 100
+18
+19 print("\nWe must know the risk a person has to contract the disease when
+exposed.")
+20 self.infection_probability = float(input("---Enter the probability
+(0-100) that a person gets infected when exposed to the disease: "))
+21
+22 print("\nWe must know how long the infection will last when exposed.")
+23 self.infection_duration = int(input("---Enter the duration (in days) of
+the infection: "))
+24
+25 print("\nWe must know the mortality rate of those infected.")
+26 self.mortality_rate = float(input("---Enter the mortality rate (0-100)
+of the infection: "))
+27
+28 print("\nWe must know how long to run the simulation.")
+29 self.sim_days = int(input("---Enter the number of days to simulate: "))
+30
+31
+32 class Person():
+33 """A class to model an individual person in a population."""
+34
+35 def __init__(self):
+36 """Initialize attributes"""
+37 self.is_infected = False #Person starts healthy, not infected
+38 self.is_dead = False #Person starts ALIVE
+39 self.days_infected = 0 #Keeps track of days infected for individual
+person
+40
+41
+42 def infect(self, simulation):
+43 """Infect a person based on sim conditions"""
+44 #random number generated must be less than infection_probability to
+infect
+45 if random.randint(0, 100) < simulation.infection_probability:
+46 self.is_infected = True
+47
+48
+49 def heal(self):
+50 """Heals a person from an infection"""
+51 self.is_infected = False
+52 self.days_infected = 0
+53
+54
+55 def die(self):
+Page 220 
+56 """Kill a person"""
+57 self.is_dead = True
+58
+59
+60 def update(self, simulation):
+61 """Update an individual person if the person is not dead. Check if they
+are infected
+62 If they are, increase the days infected count, then check if they
+should die or be healed."""
+63 #Check if the person is not dead before updating
+64 if not self.is_dead:
+65 #Check if the person is infected
+66 if self.is_infected:
+67 self.days_infected += 1
+68 #Check to see if the person will die
+69 if random.randint(0, 100) < simulation.mortality_rate:
+70 self.die()
+71 #Check if the infection is over, if it is, heal the person
+72 elif self.days_infected == simulation.infection_duration:
+73 self.heal()
+74
+75
+76 class Population():
+77 """A class to model a whole population of Person objects"""
+78
+79 def __init__(self, simulation):
+80 """Initialize attributes"""
+81 self.population = [] #A list to hold all Person instances once created
+82
+83 #Create the correct number of Person instances based on the sim
+conditions
+84 for i in range(simulation.population_size):
+85 person = Person()
+86 self.population.append(person)
+87
+88
+89 def initial_infection(self, simulation):
+90 """Infect an initial portion of the population."""
+91 #The number of people to infect is found by taking the pop size *
+infection percentage
+92 #We must round to 0 decimals and cast to an int so we can use
+infected_count in a for loop.
+93 infected_count =
+int(round(simulation.infection_percent*simulation.population_size, 0))
+94
+95 #Infect the correct number of people
+96 for i in range(infected_count):
+97 #Infect the ith person in the population attribute
+98 self.population[i].is_infected = True
+99 self.population[i].days_infected = 1
+100
+101 #Shuffle the population list so we spread the infection out randomly
+102 random.shuffle(self.population)
+103
+104
+105 def spread_infection(self, simulation):
+106 """Spread the infection to all adjacent people in the list population."""
+107 for i in range(len(self.population)):
+108 #ith person is ALIVE, see if they should be infected.
+109 #Don't bother infecting a dead person, they are infected and dead.
+110 #Check to see if adjacent Persons are infected
+111 if self.population[i].is_dead == False:
+112 #i is the first person in the list, can only check to the right
+[i+1].
+Page 221 
+113 if i == 0:
+114 if self.population[i+1].is_infected:
+115 self.population[i].infect(simulation)
+116 #i is in the middle of the list, can check to the left [i-1] and
+right [i+1].
+117 elif i < len(self.population)-1:
+118 if self.population[i-1].is_infected or
+self.population[i+1].is_infected:
+119 self.population[i].infect(simulation)
+120 #i is the last person in the list, can only check to the left
+[i-1].
+121 elif i == len(self.population)-1:
+122 if self.population[i-1].is_infected:
+123 self.population[i].infect(simulation)
+124
+125
+126 def update(self, simulation):
+127 """Update the whole population by updating each individual person in the
+population."""
+128 simulation.day_number += 1
+129
+130 #Call the update method for all person instances in the population
+131 for person in self.population:
+132 person.update(simulation)
+133
+134
+135 def display_statistics(self, simulation):
+136 """Display the current statistics of a population."""
+137 #Initialize values
+138 total_infected_count = 0
+139 total_death_count = 0
+140
+141 #Loop through whole population
+142 for person in self.population:
+143 #Person is infected
+144 if person.is_infected:
+145 total_infected_count += 1
+146 #Person is dead
+147 if person.is_dead:
+148 total_death_count += 1
+149
+150 #Calculate percentage of population that is infected and dead
+151 infected_percent = round(100*(total_infected_count/
+simulation.population_size), 4)
+152 death_percent = round(100*(total_death_count/
+simulation.population_size), 4)
+153
+154 #Statistics summary
+155 print("\n-----Day # " + str(simulation.day_number) + "-----")
+156 print("Percentage of Population Infected: " + str(infected_percent) +
+"%")
+157 print("Percentage of Population Dead: " + str(death_percent) + "%")
+158 print("Total People Infected: " + str(total_infected_count) + " / " +
+str(simulation.population_size))
+159 print("Total Deaths: " + str(total_death_count) + " / " +
+str(simulation.population_size))
+160
+161
+162 def graphics(self):
+163 """A graphical representation for a population. O is healthy, I
+infected, X dead."""
+164 status = [] #A list to hold all X, I, and O to represent the status of
+each person
+165
+Page 222 
+166 for person in self.population:
+167 #Person is dead, X
+168 if person.is_dead:
+169 char = 'X'
+170 #Person is alive, are they infected or healthy?
+171 else:
+172 #Person is infected, I
+173 if person.is_infected:
+174 char = 'I'
+175 #Person is healthy, O
+176 else:
+177 char = 'O'
+178
+179 status.append(char)
+180
+181 #Print out all status characters separated by a -
+182 for letter in status:
+183 print(letter, end='-')
+184
+185
+186 #The main code
+187 #Create a simulation and population object
+188 sim = Simulation()
+189 pop = Population(sim)
+190
+191 #Set the initial infection conditions of the population
+192 pop.initial_infection(sim)
+193 pop.display_statistics(sim)
+194 pop.graphics()
+195 input("\nPress enter to begin the simulation")
+196
+197 #Run the simulation
+198 for i in range(1, sim.sim_days):
+199 #For a single day, spread the infection, update the population, display
+statistics and graphics
+200 pop.spread_infection(sim)
+201 pop.update(sim)
+202 pop.display_statistics(sim)
+203 pop.graphics()
+204
+205 #If it is not the last day of the simulation, pause the program
+206 if i != sim.sim_days - 1:
+207 input("\nPress enter to advance to the next day.")
